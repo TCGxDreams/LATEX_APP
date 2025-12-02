@@ -124,25 +124,28 @@ export const Preview: React.FC<PreviewProps> = ({ content }) => {
           </div>
         ) : (
           pages.map((pageContent, index) => (
-            <article 
+            <article
               key={index}
-              className="print-content bg-white shadow-[0_4px_6px_-1px_rgba(0,0,0,0.1),0_2px_4px_-1px_rgba(0,0,0,0.06),0_0_0_1px_rgba(0,0,0,0.05)] w-[21cm] p-[2.5cm] text-justify transition-transform duration-200 ease-out origin-top break-words overflow-visible mb-8"
-              style={{ 
+              className="print-content bg-white shadow-[0_4px_6px_-1px_rgba(0,0,0,0.1),0_2px_4px_-1px_rgba(0,0,0,0.06),0_0_0_1px_rgba(0,0,0,0.05)] w-[21cm] p-[2.5cm] text-justify transition-transform duration-200 ease-out origin-top break-words overflow-hidden mb-8"
+              style={{
                 fontFamily: '"Noto Serif", serif',
                 transform: `scale(${scale / 100})`,
                 minHeight: '29.7cm', // Allows growth if content is long
-                height: 'auto'
+                height: 'auto',
+                wordWrap: 'break-word',
+                overflowWrap: 'break-word',
+                wordBreak: 'break-word'
               }}
             >
               <ReactMarkdown
                 remarkPlugins={[remarkMath]}
                 rehypePlugins={[rehypeKatex]}
                 components={{
-                  h1: ({...props}) => <h1 className="text-3xl font-bold mb-6 mt-4 leading-tight text-gray-900 border-b-2 border-transparent" {...props} />,
-                  h2: ({...props}) => <h2 className="text-xl font-bold mb-4 mt-8 text-gray-900 border-b border-gray-300 pb-1" {...props} />,
-                  h3: ({...props}) => <h3 className="text-lg font-bold mb-3 mt-6 text-gray-800" {...props} />,
-                  h4: ({...props}) => <h4 className="text-base font-bold mb-2 mt-4 text-gray-800 uppercase tracking-wide" {...props} />,
-                  p: ({...props}) => <p className="mb-4 leading-relaxed text-gray-800 text-[11pt]" {...props} />,
+                  h1: ({...props}) => <h1 className="text-3xl font-bold mb-6 mt-4 leading-tight text-gray-900 border-b-2 border-transparent break-words" {...props} />,
+                  h2: ({...props}) => <h2 className="text-xl font-bold mb-4 mt-8 text-gray-900 border-b border-gray-300 pb-1 break-words" {...props} />,
+                  h3: ({...props}) => <h3 className="text-lg font-bold mb-3 mt-6 text-gray-800 break-words" {...props} />,
+                  h4: ({...props}) => <h4 className="text-base font-bold mb-2 mt-4 text-gray-800 uppercase tracking-wide break-words" {...props} />,
+                  p: ({...props}) => <p className="mb-4 leading-relaxed text-gray-800 text-[11pt] break-words" {...props} />,
                   ul: ({...props}) => <ul className="list-disc pl-8 mb-4 space-y-1 marker:text-gray-500" {...props} />,
                   ol: ({...props}) => <ol className="list-decimal pl-8 mb-4 space-y-1 marker:text-gray-500" {...props} />,
                   li: ({...props}) => <li className="pl-1" {...props} />,
@@ -151,11 +154,11 @@ export const Preview: React.FC<PreviewProps> = ({ content }) => {
                   code: ({className, children, ...props}) => {
                     const match = /language-(\w+)/.exec(className || '')
                     return match ? (
-                      <pre className="bg-gray-50 p-3 rounded text-sm overflow-x-auto my-4 border border-gray-200">
+                      <pre className="bg-gray-50 p-3 rounded text-sm overflow-x-auto my-4 border border-gray-200 break-words whitespace-pre-wrap">
                         <code className={className} {...props}>{children}</code>
                       </pre>
                     ) : (
-                      <code className="bg-gray-100 px-1.5 py-0.5 rounded text-sm font-mono text-gray-700" {...props}>{children}</code>
+                      <code className="bg-gray-100 px-1.5 py-0.5 rounded text-sm font-mono text-gray-700 break-words" {...props}>{children}</code>
                     )
                   },
                   img: ({...props}) => (
@@ -168,7 +171,7 @@ export const Preview: React.FC<PreviewProps> = ({ content }) => {
                   ),
                   div: ({className, children, ...props}) => {
                      if (className?.includes('math-display')) {
-                       return <div className="my-6 overflow-x-auto text-center" {...props}>{children}</div>
+                       return <div className="my-6 overflow-x-auto text-center break-words" style={{ maxWidth: '100%' }} {...props}>{children}</div>
                      }
                      if (className === 'page-break') {
                         // In screen view, we already split pages manually, so this is just a fallback for internal breaks
