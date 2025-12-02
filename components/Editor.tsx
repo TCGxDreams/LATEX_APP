@@ -84,13 +84,13 @@ export const Editor: React.FC<EditorProps> = ({ value, onChange }) => {
           {/* Highlight Layer (Behind) - z-0 */}
           <pre
             ref={preRef}
-            className="absolute inset-0 p-4 font-mono text-sm leading-6 pointer-events-none whitespace-pre overflow-hidden z-0"
-            style={{ fontFamily: '"JetBrains Mono", monospace', tabSize: 2 }}
-            dangerouslySetInnerHTML={{ __html: highlightedCode + '<br/>' }} 
+            className="absolute inset-0 p-4 font-mono text-sm leading-6 pointer-events-none whitespace-pre-wrap break-words overflow-hidden z-0"
+            style={{ fontFamily: '"JetBrains Mono", monospace', tabSize: 2, wordBreak: 'break-word', overflowWrap: 'break-word' }}
+            dangerouslySetInnerHTML={{ __html: highlightedCode + '<br/>' }}
           />
 
-          {/* Input Layer (Top, Transparent) - z-10 
-              Critically: caret-black ensures cursor is visible, text-transparent hides raw text 
+          {/* Input Layer (Top, Transparent) - z-10
+              Critically: caret-black ensures cursor is visible, text-transparent hides raw text
               but selection:bg makes text selectable/visible on drag.
           */}
           <textarea
@@ -98,13 +98,13 @@ export const Editor: React.FC<EditorProps> = ({ value, onChange }) => {
             value={value}
             onChange={(e) => onChange(e.target.value)}
             onScroll={handleScroll}
-            className="absolute inset-0 w-full h-full resize-none p-4 font-mono text-sm leading-6 bg-transparent border-none focus:ring-0 outline-none whitespace-pre text-transparent caret-black selection:bg-[#b3d7ff]/50 selection:text-black/50 z-10"
+            className="absolute inset-0 w-full h-full resize-none p-4 font-mono text-sm leading-6 bg-transparent border-none focus:ring-0 outline-none whitespace-pre-wrap break-words text-transparent caret-black selection:bg-[#b3d7ff]/50 selection:text-black/50 z-10"
             spellCheck={false}
             autoCapitalize="off"
             autoComplete="off"
             autoCorrect="off"
             placeholder="% Start typing your LaTeX code here..."
-            style={{ fontFamily: '"JetBrains Mono", monospace', tabSize: 2 }}
+            style={{ fontFamily: '"JetBrains Mono", monospace', tabSize: 2, wordBreak: 'break-word', overflowWrap: 'break-word' }}
           />
         </div>
       </div>

@@ -29,7 +29,26 @@
       body {
         overscroll-behavior: none;
       }
-      
+
+      /* Fix KaTeX math overflow */
+      .katex-display {
+        overflow-x: auto;
+        overflow-y: hidden;
+        max-width: 100%;
+      }
+
+      .katex {
+        font-size: 1em;
+        max-width: 100%;
+        overflow-x: auto;
+        overflow-y: hidden;
+      }
+
+      /* Ensure math wraps within containers */
+      .katex-display > .katex {
+        white-space: normal;
+      }
+
       /* Print Styles for PDF Export */
       @media print {
         @page {
