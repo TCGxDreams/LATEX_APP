@@ -16,9 +16,9 @@ export const Preview: React.FC<PreviewProps> = ({ content }) => {
   const handleZoomOut = () => setScale(prev => Math.max(prev - 10, 50));
   const handleFit = () => setScale(100);
 
-  // Split content by \newpage for visual pagination
+  // Process content and split into pages
   const pages = useMemo(() => {
-    // Basic pre-processing similar to before
+    // Basic pre-processing
     let md = content;
 
     // Strip Preamble
@@ -115,7 +115,7 @@ export const Preview: React.FC<PreviewProps> = ({ content }) => {
       </div>
       
       {/* Scrollable Container */}
-      <div className="flex-1 overflow-auto p-8 flex flex-col items-center bg-[#dce1e6] relative no-print-scroll">
+      <div className="flex-1 overflow-auto p-8 flex flex-col items-center bg-[#525659] relative no-print-scroll">
         
         {pages.length === 0 || (pages.length === 1 && !pages[0].trim()) ? (
           <div className="flex flex-col items-center justify-center h-[500px] text-gray-300 select-none">
@@ -126,15 +126,18 @@ export const Preview: React.FC<PreviewProps> = ({ content }) => {
           pages.map((pageContent, index) => (
             <article
               key={index}
-              className="print-content bg-white shadow-[0_4px_6px_-1px_rgba(0,0,0,0.1),0_2px_4px_-1px_rgba(0,0,0,0.06),0_0_0_1px_rgba(0,0,0,0.05)] w-[21cm] p-[2.5cm] text-justify transition-transform duration-200 ease-out origin-top break-words overflow-hidden mb-8"
+              className="print-content bg-white shadow-lg w-[21cm] p-[2.5cm] text-justify transition-transform duration-200 ease-out origin-top break-words overflow-visible mb-6 border border-gray-200"
               style={{
                 fontFamily: '"Noto Serif", serif',
                 transform: `scale(${scale / 100})`,
-                minHeight: '29.7cm', // Allows growth if content is long
-                height: 'auto',
+                minHeight: '29.7cm',
+                maxHeight: '29.7cm',
+                height: '29.7cm',
                 wordWrap: 'break-word',
                 overflowWrap: 'break-word',
-                wordBreak: 'break-word'
+                wordBreak: 'break-word',
+                pageBreakAfter: 'always',
+                pageBreakInside: 'avoid'
               }}
             >
               <ReactMarkdown
@@ -184,9 +187,9 @@ export const Preview: React.FC<PreviewProps> = ({ content }) => {
                 {pageContent}
               </ReactMarkdown>
               
-              {/* Page Number (Visual only) */}
-              <div className="absolute bottom-8 left-0 right-0 text-center text-xs text-gray-400 pointer-events-none no-print">
-                {index + 1}
+              {/* Page Number */}
+              <div className="absolute bottom-6 right-8 text-xs text-gray-400 font-mono pointer-events-none no-print bg-white/80 px-2 py-1 rounded">
+                Page {index + 1} of {pages.length}
               </div>
             </article>
           ))
