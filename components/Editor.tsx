@@ -10,7 +10,6 @@ interface EditorProps {
 
 export const Editor: React.FC<EditorProps> = ({ value, onChange }) => {
   const textareaRef = useRef<HTMLTextAreaElement>(null);
-  const preRef = useRef<HTMLPreElement>(null);
   const gutterRef = useRef<HTMLDivElement>(null);
 
   const [cursorPosition, setCursorPosition] = useState(0);
@@ -163,57 +162,14 @@ export const Editor: React.FC<EditorProps> = ({ value, onChange }) => {
     return () => window.removeEventListener('keydown', handleKeyDown);
   }, [value]);
 
-  // Optimized Scroll Sync
+  // Scroll Sync with line numbers
   const handleScroll = (e: React.UIEvent<HTMLTextAreaElement>) => {
-    const { scrollTop, scrollLeft } = e.currentTarget;
+    const { scrollTop } = e.currentTarget;
 
-    if (preRef.current) {
-      preRef.current.scrollTop = scrollTop;
-      preRef.current.scrollLeft = scrollLeft;
-    }
     if (gutterRef.current) {
       gutterRef.current.scrollTop = scrollTop;
     }
   };
-
-  // Simple regex-based LaTeX syntax highlighter
-  const highlightedCode = useMemo(() => {
-    return value.split('\n').map((line, i) => {
-      // Escape HTML
-      let safeLine = line
-        .replace(/&/g, '&amp;')
-        .replace(/</g, '&lt;')
-        .replace(/>/g, '&gt;');
-
-      // 1. Comments
-      const commentMatch = safeLine.match(/(%.*)$/);
-      let commentPart = '';
-      let codePart = safeLine;
-      
-      if (commentMatch) {
-        commentPart = `<span class="text-gray-400 italic">${commentMatch[0]}</span>`;
-        codePart = safeLine.substring(0, commentMatch.index);
-      }
-
-      // 2. Commands (Blue)
-      codePart = codePart.replace(/(\\[a-zA-Z@]+)/g, '<span class="text-[#204a87] font-bold">$1</span>');
-      
-      // 3. Special Characters
-      codePart = codePart
-        .replace(/(\{)/g, '<span class="text-[#ce5c00] font-bold">{</span>')
-        .replace(/(\})/g, '<span class="text-[#ce5c00] font-bold">}</span>')
-        .replace(/(\[)/g, '<span class="text-[#5c3566] font-bold">[</span>')
-        .replace(/(\])/g, '<span class="text-[#5c3566] font-bold">]</span>');
-
-      // 4. Math Environment Markers
-      codePart = codePart.replace(/(\$)/g, '<span class="text-[#4e9a06] font-bold">$1</span>');
-      
-      // 5. Section Arguments
-      codePart = codePart.replace(/(\\section)(\{)([^}]+)(\})/g, '$1$2<span class="text-[#c4a000] font-bold">$3</span>$4');
-
-      return codePart + commentPart;
-    }).join('\n');
-  }, [value]);
 
   return (
     <div className="flex flex-col h-full bg-white relative">
@@ -234,32 +190,25 @@ export const Editor: React.FC<EditorProps> = ({ value, onChange }) => {
 
         {/* Editor Container */}
         <div className="relative flex-1 h-full overflow-hidden">
-          {/* Highlight Layer (Behind) - z-0 */}
-          <pre
-            ref={preRef}
-            className="absolute inset-0 p-4 font-mono text-sm leading-6 pointer-events-none whitespace-pre-wrap break-words overflow-hidden z-0"
-            style={{ fontFamily: '"JetBrains Mono", monospace', tabSize: 2, wordBreak: 'break-word', overflowWrap: 'break-word' }}
-            dangerouslySetInnerHTML={{ __html: highlightedCode + '<br/>' }}
-          />
-
-          {/* Input Layer (Top) - z-10 */}
+          {/* Simple textarea - visible text */}
           <textarea
             ref={textareaRef}
             value={value}
             onChange={(e) => onChange(e.target.value)}
             onScroll={handleScroll}
-            className="absolute inset-0 w-full h-full resize-none p-4 font-mono text-sm leading-6 bg-transparent border-none focus:ring-0 outline-none whitespace-pre-wrap break-words text-gray-800 caret-gray-900 selection:bg-blue-200 selection:text-gray-900 z-10 opacity-70"
+            className="absolute inset-0 w-full h-full resize-none p-4 font-mono text-sm leading-6 bg-white border-none focus:ring-0 outline-none whitespace-pre-wrap break-words text-gray-900 caret-blue-600 selection:bg-blue-200 selection:text-gray-900 z-10"
             spellCheck={false}
             autoCapitalize="off"
             autoComplete="off"
             autoCorrect="off"
             placeholder="% Start typing your LaTeX code here..."
             style={{
-              fontFamily: '"JetBrains Mono", monospace',
+              fontFamily: '"JetBrains Mono", "Consolas", "Monaco", monospace',
               tabSize: 2,
               wordBreak: 'break-word',
               overflowWrap: 'break-word',
-              caretColor: '#1f2937'
+              fontSize: '14px',
+              lineHeight: '1.5'
             }}
           />
         </div>
