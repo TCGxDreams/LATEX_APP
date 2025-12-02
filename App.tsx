@@ -5,9 +5,10 @@ import { Sidebar } from './components/Sidebar';
 import { Button } from './components/Button';
 import { QuickInsert } from './components/QuickInsert';
 import { FindReplace } from './components/FindReplace';
+import { CompileLog } from './components/CompileLog';
 import { checkGrammar } from './services/geminiService';
 import { GrammarSuggestion, SidebarView, ProjectFile } from './types';
-import { FileText, Wand2, MessageSquare, Download, Menu, Share2, Folder, ChevronDown, ChevronRight, Image as ImageIcon, RefreshCw, Home, X, User, Lock, Mail, Users, Link, History as HistoryIcon, Clock, Hash, Search, Moon, Sun } from 'lucide-react';
+import { FileText, Wand2, MessageSquare, Download, Menu, Share2, Folder, ChevronDown, ChevronRight, Image as ImageIcon, RefreshCw, Home, X, User, Lock, Mail, Users, Link, History as HistoryIcon, Clock, Hash, Search, Moon, Sun, AlertCircle } from 'lucide-react';
 import clsx from 'clsx';
 
 // --- INITIAL DATA ---
@@ -124,6 +125,9 @@ export default function App() {
   const [showQuickInsert, setShowQuickInsert] = useState(false);
   const [showFindReplace, setShowFindReplace] = useState(false);
   const [darkMode, setDarkMode] = useState(false);
+  const [showCompileLog, setShowCompileLog] = useState(false);
+  const [compileHasErrors, setCompileHasErrors] = useState(false);
+  const [compileLogs, setCompileLogs] = useState<string[]>([]);
 
   // Derived active file
   const activeFile = files.find(f => f.name === activeFileName) || files[0];
@@ -165,7 +169,21 @@ export default function App() {
 
   const handleRecompile = () => {
     setIsRecompiling(true);
-    setTimeout(() => setIsRecompiling(false), 800);
+    setShowCompileLog(true);
+    setCompileHasErrors(false);
+    setCompileLogs([]);
+    setTimeout(() => {
+      setIsRecompiling(false);
+      // Simulate compile success
+      setCompileLogs([
+        'This is pdfTeX, Version 3.14159265-2.6-1.40.21',
+        'entering extended mode',
+        '(./main.tex',
+        'LaTeX2e <2020-10-01>',
+        'Output written on main.pdf (1 page, 12345 bytes).',
+        'Transcript written on main.log.'
+      ]);
+    }, 800);
   };
 
   const handleDownloadPDF = () => {
@@ -376,12 +394,24 @@ export default function App() {
 
              <div className="h-4 w-px bg-gray-300" />
 
-             <button 
+             <button
                 onClick={handleDownloadPDF}
                 className="flex items-center gap-1.5 px-3 py-1.5 hover:bg-gray-200 rounded text-gray-600 text-xs font-medium transition-colors"
              >
                 <Download className="w-4 h-4" />
                 PDF
+             </button>
+
+             <button
+                onClick={() => setShowCompileLog(!showCompileLog)}
+                className={clsx(
+                  "flex items-center gap-1.5 px-3 py-1.5 rounded text-xs font-medium transition-colors",
+                  showCompileLog ? "bg-emerald-100 text-emerald-700" : "hover:bg-gray-200 text-gray-600",
+                  compileHasErrors && "text-red-600 hover:bg-red-50"
+                )}
+             >
+                {compileHasErrors ? <AlertCircle className="w-4 h-4" /> : <FileText className="w-4 h-4" />}
+                Logs {compileHasErrors && <span className="bg-red-500 text-white rounded-full w-4 h-4 text-[10px] flex items-center justify-center">!</span>}
              </button>
          </div>
       </div>
@@ -460,8 +490,16 @@ export default function App() {
         <div className="w-1 bg-gray-200 hover:bg-emerald-500 cursor-col-resize transition-colors hidden md:block z-10 shadow-sm no-print" />
 
         {/* Preview Pane - FULL SCREEN ON PRINT */}
-        <div className={`hidden md:flex flex-col min-w-0 bg-gray-100 transition-all duration-300 ${activeSidebar ? 'w-[40%]' : 'w-1/2'}`}>
+        <div className={`hidden md:flex flex-col min-w-0 bg-gray-100 transition-all duration-300 relative ${activeSidebar ? 'w-[40%]' : 'w-1/2'}`}>
           <Preview content={mainTexFile.content} />
+
+          {/* Compile Log Panel */}
+          <CompileLog
+            isOpen={showCompileLog}
+            onClose={() => setShowCompileLog(false)}
+            hasErrors={compileHasErrors}
+            logs={compileLogs}
+          />
         </div>
 
         {/* Right Sidebar (AI/Grammar) - HIDDEN ON PRINT */}

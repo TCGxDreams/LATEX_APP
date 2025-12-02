@@ -242,22 +242,25 @@ export const Editor: React.FC<EditorProps> = ({ value, onChange }) => {
             dangerouslySetInnerHTML={{ __html: highlightedCode + '<br/>' }}
           />
 
-          {/* Input Layer (Top, Transparent) - z-10
-              Critically: caret-black ensures cursor is visible, text-transparent hides raw text
-              but selection:bg makes text selectable/visible on drag.
-          */}
+          {/* Input Layer (Top) - z-10 */}
           <textarea
             ref={textareaRef}
             value={value}
             onChange={(e) => onChange(e.target.value)}
             onScroll={handleScroll}
-            className="absolute inset-0 w-full h-full resize-none p-4 font-mono text-sm leading-6 bg-transparent border-none focus:ring-0 outline-none whitespace-pre-wrap break-words text-transparent caret-black selection:bg-[#b3d7ff]/50 selection:text-black/50 z-10"
+            className="absolute inset-0 w-full h-full resize-none p-4 font-mono text-sm leading-6 bg-transparent border-none focus:ring-0 outline-none whitespace-pre-wrap break-words text-gray-800 caret-gray-900 selection:bg-blue-200 selection:text-gray-900 z-10 opacity-70"
             spellCheck={false}
             autoCapitalize="off"
             autoComplete="off"
             autoCorrect="off"
             placeholder="% Start typing your LaTeX code here..."
-            style={{ fontFamily: '"JetBrains Mono", monospace', tabSize: 2, wordBreak: 'break-word', overflowWrap: 'break-word' }}
+            style={{
+              fontFamily: '"JetBrains Mono", monospace',
+              tabSize: 2,
+              wordBreak: 'break-word',
+              overflowWrap: 'break-word',
+              caretColor: '#1f2937'
+            }}
           />
         </div>
       </div>
