@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { X, Hash, Pi, Sigma, Infinity, Subscript, Superscript, Divide, SquareRoot } from 'lucide-react';
+import { X, Hash, Pi, Sigma, Infinity, Subscript, Superscript, Divide, Calculator } from 'lucide-react';
 
 interface QuickInsertProps {
   onInsert: (text: string) => void;
@@ -93,7 +93,7 @@ const SYMBOLS: Symbol[] = [
 
 const TEMPLATES = [
   { name: 'Fraction', latex: '\\frac{numerator}{denominator}', icon: Divide },
-  { name: 'Square Root', latex: '\\sqrt{x}', icon: SquareRoot },
+  { name: 'Square Root', latex: '\\sqrt{x}', icon: Calculator },
   { name: 'Subscript', latex: 'x_{subscript}', icon: Subscript },
   { name: 'Superscript', latex: 'x^{superscript}', icon: Superscript },
   { name: 'Summation', latex: '\\sum_{i=1}^{n}', icon: Sigma },
