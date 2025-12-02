@@ -1,5 +1,7 @@
 
-import React, { useRef, useMemo, useEffect } from 'react';
+import React, { useRef, useMemo, useEffect, useState } from 'react';
+import { AutoComplete } from './AutoComplete';
+import { FormattingToolbar } from './FormattingToolbar';
 
 interface EditorProps {
   value: string;
@@ -10,13 +12,161 @@ export const Editor: React.FC<EditorProps> = ({ value, onChange }) => {
   const textareaRef = useRef<HTMLTextAreaElement>(null);
   const preRef = useRef<HTMLPreElement>(null);
   const gutterRef = useRef<HTMLDivElement>(null);
-  
+
+  const [cursorPosition, setCursorPosition] = useState(0);
+  const [showAutocomplete, setShowAutocomplete] = useState(false);
+  const [autocompletePos, setAutocompletePos] = useState({ top: 0, left: 0 });
+
   const lineCount = value.split('\n').length;
+
+  // Track cursor position for autocomplete
+  useEffect(() => {
+    const textarea = textareaRef.current;
+    if (!textarea) return;
+
+    const handleSelectionChange = () => {
+      const pos = textarea.selectionStart;
+      setCursorPosition(pos);
+
+      // Check if we should show autocomplete
+      const textBefore = value.substring(0, pos);
+      const shouldShow = /\\[a-zA-Z]*$/.test(textBefore);
+      setShowAutocomplete(shouldShow);
+
+      if (shouldShow) {
+        // Calculate position for autocomplete popup
+        const coords = getCursorCoordinates(textarea, pos);
+        setAutocompletePos(coords);
+      }
+    };
+
+    textarea.addEventListener('click', handleSelectionChange);
+    textarea.addEventListener('keyup', handleSelectionChange);
+
+    return () => {
+      textarea.removeEventListener('click', handleSelectionChange);
+      textarea.removeEventListener('keyup', handleSelectionChange);
+    };
+  }, [value]);
+
+  // Get cursor coordinates for autocomplete positioning
+  const getCursorCoordinates = (element: HTMLTextAreaElement, position: number) => {
+    const div = document.createElement('div');
+    const style = getComputedStyle(element);
+
+    ['fontFamily', 'fontSize', 'fontWeight', 'letterSpacing', 'lineHeight', 'padding'].forEach(prop => {
+      (div.style as any)[prop] = (style as any)[prop];
+    });
+
+    div.style.position = 'absolute';
+    div.style.visibility = 'hidden';
+    div.style.whiteSpace = 'pre-wrap';
+    div.style.wordWrap = 'break-word';
+
+    const text = element.value.substring(0, position);
+    div.textContent = text;
+
+    const span = document.createElement('span');
+    span.textContent = element.value.substring(position) || '.';
+    div.appendChild(span);
+
+    document.body.appendChild(div);
+    const { offsetTop: top, offsetLeft: left } = span;
+    document.body.removeChild(div);
+
+    return { top: top + 60, left: Math.min(left, window.innerWidth - 400) };
+  };
+
+  // Handle autocomplete selection
+  const handleAutocompleteSelect = (completion: string) => {
+    const textarea = textareaRef.current;
+    if (!textarea) return;
+
+    const pos = cursorPosition;
+    const textBefore = value.substring(0, pos);
+    const textAfter = value.substring(pos);
+
+    // Find the start of the current command
+    const match = textBefore.match(/\\[a-zA-Z]*$/);
+    if (!match) return;
+
+    const commandStart = pos - match[0].length;
+    const newValue = value.substring(0, commandStart) + match[0] + completion + textAfter;
+
+    onChange(newValue);
+    setShowAutocomplete(false);
+
+    // Set cursor position after the inserted text
+    setTimeout(() => {
+      const newPos = commandStart + match[0].length + completion.length;
+      textarea.selectionStart = textarea.selectionEnd = newPos;
+      textarea.focus();
+    }, 0);
+  };
+
+  // Handle formatting toolbar insertions
+  const handleInsert = (text: string, wrapper?: boolean) => {
+    const textarea = textareaRef.current;
+    if (!textarea) return;
+
+    const start = textarea.selectionStart;
+    const end = textarea.selectionEnd;
+    const selectedText = value.substring(start, end);
+
+    let newText = '';
+    let cursorOffset = 0;
+
+    if (wrapper && selectedText) {
+      // Wrap selected text
+      newText = text + selectedText + '}';
+      cursorOffset = text.length + selectedText.length + 1;
+    } else if (wrapper) {
+      // Insert wrapper with cursor inside
+      newText = text + '}';
+      cursorOffset = text.length;
+    } else {
+      // Insert template
+      newText = text;
+      cursorOffset = text.length;
+    }
+
+    const newValue = value.substring(0, start) + newText + value.substring(end);
+    onChange(newValue);
+
+    setTimeout(() => {
+      textarea.selectionStart = textarea.selectionEnd = start + cursorOffset;
+      textarea.focus();
+    }, 0);
+  };
+
+  // Keyboard shortcuts
+  useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      // Ctrl+B: Bold
+      if (e.ctrlKey && e.key === 'b') {
+        e.preventDefault();
+        handleInsert('\\textbf{', true);
+      }
+      // Ctrl+I: Italic
+      else if (e.ctrlKey && e.key === 'i') {
+        e.preventDefault();
+        handleInsert('\\textit{', true);
+      }
+      // Ctrl+U: Underline
+      else if (e.ctrlKey && e.key === 'u') {
+        e.preventDefault();
+        handleInsert('\\underline{', true);
+      }
+    };
+
+    window.addEventListener('keydown', handleKeyDown);
+    return () => window.removeEventListener('keydown', handleKeyDown);
+  }, [value]);
 
   // Optimized Scroll Sync
   const handleScroll = (e: React.UIEvent<HTMLTextAreaElement>) => {
     const { scrollTop, scrollLeft } = e.currentTarget;
-    
+
     if (preRef.current) {
       preRef.current.scrollTop = scrollTop;
       preRef.current.scrollLeft = scrollLeft;
@@ -67,6 +217,9 @@ export const Editor: React.FC<EditorProps> = ({ value, onChange }) => {
 
   return (
     <div className="flex flex-col h-full bg-white relative">
+      {/* Formatting Toolbar */}
+      <FormattingToolbar onInsert={handleInsert} />
+
       <div className="flex-1 relative flex overflow-hidden">
         {/* Line Numbers Gutter */}
         <div 
@@ -121,6 +274,16 @@ export const Editor: React.FC<EditorProps> = ({ value, onChange }) => {
            <span className="font-semibold text-gray-700">Online</span>
         </div>
       </div>
+
+      {/* AutoComplete Popup */}
+      {showAutocomplete && (
+        <AutoComplete
+          value={value}
+          cursorPosition={cursorPosition}
+          onSelect={handleAutocompleteSelect}
+          position={autocompletePos}
+        />
+      )}
     </div>
   );
 };

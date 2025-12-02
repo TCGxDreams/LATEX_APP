@@ -3,9 +3,11 @@ import { Editor } from './components/Editor';
 import { Preview } from './components/Preview';
 import { Sidebar } from './components/Sidebar';
 import { Button } from './components/Button';
+import { QuickInsert } from './components/QuickInsert';
+import { FindReplace } from './components/FindReplace';
 import { checkGrammar } from './services/geminiService';
 import { GrammarSuggestion, SidebarView, ProjectFile } from './types';
-import { FileText, Wand2, MessageSquare, Download, Menu, Share2, Folder, ChevronDown, ChevronRight, Image as ImageIcon, RefreshCw, Home, X, User, Lock, Mail, Users, Link, History as HistoryIcon, Clock } from 'lucide-react';
+import { FileText, Wand2, MessageSquare, Download, Menu, Share2, Folder, ChevronDown, ChevronRight, Image as ImageIcon, RefreshCw, Home, X, User, Lock, Mail, Users, Link, History as HistoryIcon, Clock, Hash, Search, Moon, Sun } from 'lucide-react';
 import clsx from 'clsx';
 
 // --- INITIAL DATA ---
@@ -118,6 +120,11 @@ export default function App() {
   const [showHistoryModal, setShowHistoryModal] = useState(false);
   const [user, setUser] = useState<{name: string, email: string} | null>(null);
 
+  // New Features
+  const [showQuickInsert, setShowQuickInsert] = useState(false);
+  const [showFindReplace, setShowFindReplace] = useState(false);
+  const [darkMode, setDarkMode] = useState(false);
+
   // Derived active file
   const activeFile = files.find(f => f.name === activeFileName) || files[0];
   const mainTexFile = files.find(f => f.name === 'main.tex') || files[0];
@@ -171,6 +178,39 @@ export default function App() {
     setShowLoginModal(false);
   };
 
+  const handleQuickInsert = (text: string) => {
+    setFiles(prev => prev.map(f => {
+      if (f.name === activeFileName) {
+        return { ...f, content: f.content + text };
+      }
+      return f;
+    }));
+  };
+
+  const handleFindNext = (position: number) => {
+    // Scroll to position in editor
+    console.log('Find next at position:', position);
+  };
+
+  // Keyboard shortcuts
+  useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      // Ctrl+F: Find & Replace
+      if (e.ctrlKey && e.key === 'f') {
+        e.preventDefault();
+        setShowFindReplace(prev => !prev);
+      }
+      // Esc: Close modals
+      else if (e.key === 'Escape') {
+        setShowQuickInsert(false);
+        setShowFindReplace(false);
+      }
+    };
+
+    window.addEventListener('keydown', handleKeyDown);
+    return () => window.removeEventListener('keydown', handleKeyDown);
+  }, []);
+
   // --- UI RENDERERS ---
 
   if (view === 'home') {
@@ -222,9 +262,9 @@ export default function App() {
   }
 
   return (
-    <div className="h-screen w-screen flex flex-col bg-gray-100 overflow-hidden text-sm font-sans antialiased">
+    <div className={`h-screen w-screen flex flex-col overflow-hidden text-sm font-sans antialiased ${darkMode ? 'dark bg-gray-900' : 'bg-gray-100'}`}>
       {/* Header - Overleaf style - HIDDEN ON PRINT */}
-      <header className="h-[52px] bg-[#003f2d] text-white flex items-center justify-between px-3 shadow-sm z-20 shrink-0 no-print">
+      <header className={`h-[52px] text-white flex items-center justify-between px-3 shadow-sm z-20 shrink-0 no-print ${darkMode ? 'bg-gray-800' : 'bg-[#003f2d]'}`}>
         <div className="flex items-center gap-4">
           <button className="flex items-center gap-2 text-gray-300 hover:text-white transition-colors">
              <Menu className="w-5 h-5" />
@@ -253,8 +293,8 @@ export default function App() {
             AI Assistant
           </Button>
 
-          <Button 
-            variant="ghost" 
+          <Button
+            variant="ghost"
             size="sm"
             className="text-white/90 hover:bg-white/10 hover:text-white"
             onClick={handleRunGrammarCheck}
@@ -263,7 +303,31 @@ export default function App() {
             <Wand2 className="w-4 h-4 mr-2" />
             Grammar
           </Button>
-          
+
+          <button
+            onClick={() => setShowQuickInsert(true)}
+            className="text-white/80 hover:text-white p-1.5 rounded hover:bg-white/10"
+            title="Quick Insert (Symbols & Templates)"
+          >
+            <Hash className="w-4 h-4" />
+          </button>
+
+          <button
+            onClick={() => setShowFindReplace(prev => !prev)}
+            className="text-white/80 hover:text-white p-1.5 rounded hover:bg-white/10"
+            title="Find & Replace (Ctrl+F)"
+          >
+            <Search className="w-4 h-4" />
+          </button>
+
+          <button
+            onClick={() => setDarkMode(prev => !prev)}
+            className="text-white/80 hover:text-white p-1.5 rounded hover:bg-white/10"
+            title="Toggle Dark Mode"
+          >
+            {darkMode ? <Sun className="w-4 h-4" /> : <Moon className="w-4 h-4" />}
+          </button>
+
           <button onClick={() => setShowHistoryModal(true)} className="text-white/80 hover:text-white p-1.5 rounded hover:bg-white/10" title="History">
             <HistoryIcon className="w-4 h-4" />
           </button>
@@ -534,6 +598,24 @@ export default function App() {
              </div>
           </div>
         </div>
+      )}
+
+      {/* Quick Insert Panel */}
+      {showQuickInsert && (
+        <QuickInsert
+          onInsert={handleQuickInsert}
+          onClose={() => setShowQuickInsert(false)}
+        />
+      )}
+
+      {/* Find & Replace Panel */}
+      {showFindReplace && (
+        <FindReplace
+          content={activeFile.content}
+          onClose={() => setShowFindReplace(false)}
+          onReplace={handleCodeChange}
+          onFindNext={handleFindNext}
+        />
       )}
     </div>
   );
