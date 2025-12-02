@@ -18,8 +18,20 @@ export const Preview: React.FC<PreviewProps> = ({ content }) => {
 
   // Process content and split into pages
   const pages = useMemo(() => {
-    // Basic pre-processing
     let md = content;
+
+    // Extract title, author, date from preamble
+    let title = 'Document';
+    let author = '';
+    let date = '';
+
+    const titleMatch = md.match(/\\title\{([^}]+)\}/);
+    const authorMatch = md.match(/\\author\{([^}]+)\}/);
+    const dateMatch = md.match(/\\date\{([^}]+)\}/);
+
+    if (titleMatch) title = titleMatch[1];
+    if (authorMatch) author = authorMatch[1];
+    if (dateMatch) date = dateMatch[1];
 
     // Strip Preamble
     if (md.includes('\\begin{document}')) {
@@ -29,12 +41,15 @@ export const Preview: React.FC<PreviewProps> = ({ content }) => {
       md = md.split('\\end{document}')[0];
     }
 
-    // Common replacements
-    md = md.replace(/\\begin\{equation\}([\s\S]*?)\\end\{equation\}/g, '$$$1$$');
-    md = md.replace(/\\begin\{equation\*\}([\s\S]*?)\\end\{equation\*\}/g, '$$$1$$');
+    // Math environments
+    md = md.replace(/\\begin\{equation\}([\s\S]*?)\\end\{equation\}/g, '$$ $1 $$');
+    md = md.replace(/\\begin\{equation\*\}([\s\S]*?)\\end\{equation\*\}/g, '$$ $1 $$');
     md = md.replace(/\\begin\{align\}([\s\S]*?)\\end\{align\}/g, '$$ \\begin{aligned}$1\\end{aligned} $$');
     md = md.replace(/\\begin\{align\*\}([\s\S]*?)\\end\{align\*\}/g, '$$ \\begin{aligned}$1\\end{aligned} $$');
-    md = md.replace(/\\\[([\s\S]*?)\\\]/g, '$$$1$$');
+    md = md.replace(/\\\[([\s\S]*?)\\\]/g, '$$ $1 $$');
+
+    // Keep common LaTeX math commands for KaTeX
+    // \dfrac, \mu, \approx, \rightarrow etc. will be handled by KaTeX directly
     md = md.replace(/\\section\*?\{([^}]+)\}/g, '# $1');
     md = md.replace(/\\subsection\*?\{([^}]+)\}/g, '## $1');
     md = md.replace(/\\subsubsection\*?\{([^}]+)\}/g, '### $1');
@@ -88,13 +103,28 @@ export const Preview: React.FC<PreviewProps> = ({ content }) => {
       return htmlTable;
     });
 
-    md = md.replace(/([^\\])%.*$/gm, '$1'); 
+    md = md.replace(/([^\\])%.*$/gm, '$1');
     md = md.replace(/\\\\/g, '\n\n');
-    md = md.replace(/\\maketitle/g, '<div class="text-center mb-12 pb-4 border-b border-gray-200"><h1 class="text-4xl font-bold mb-4">The Theory of Relativity</h1><div class="text-lg mb-1">Albert Einstein</div><div class="text-gray-500 font-serif">October 26, 2023</div></div>');
 
-    // SPLIT BY \newpage
-    // We use a regex to split, but keep the content
-    return md.split(/\\newpage/g);
+    // Replace \maketitle with actual title/author/date
+    const titleBlock = `<div class="text-center mb-12 pb-4 border-b border-gray-200">
+      <h1 class="text-4xl font-bold mb-4">${title}</h1>
+      ${author ? `<div class="text-lg mb-1">${author}</div>` : ''}
+      ${date ? `<div class="text-gray-500 font-serif">${date}</div>` : ''}
+    </div>`;
+    md = md.replace(/\\maketitle/g, titleBlock);
+
+    // SPLIT BY \newpage OR auto-split by sections for long content
+    let pages = md.split(/\\newpage/g);
+
+    // If no explicit page breaks and content is very long, auto-split by sections
+    if (pages.length === 1 && md.length > 5000) {
+      // Split by major sections to create pages
+      const sections = md.split(/(?=\n#\s)/g);
+      return sections.filter(s => s.trim().length > 0);
+    }
+
+    return pages.filter(p => p.trim().length > 0);
   }, [content]);
 
   return (
@@ -131,8 +161,7 @@ export const Preview: React.FC<PreviewProps> = ({ content }) => {
                 fontFamily: '"Noto Serif", serif',
                 transform: `scale(${scale / 100})`,
                 minHeight: '29.7cm',
-                maxHeight: '29.7cm',
-                height: '29.7cm',
+                height: 'auto',
                 wordWrap: 'break-word',
                 overflowWrap: 'break-word',
                 wordBreak: 'break-word',
